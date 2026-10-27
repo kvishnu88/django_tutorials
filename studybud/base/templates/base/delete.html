@@ -1,0 +1,11 @@
+{% extends "main.html" %}
+
+{% block content %}
+    <h1>Delete Room</h1>
+    <p>Are you sure you want to delete the room "{{ room.name }}"?</p>
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit">Yes, Delete</button>
+        <a href="{{request.META.HTTP_REFERER}}">Cancel</a>
+    </form>
+{% endblock %}  
