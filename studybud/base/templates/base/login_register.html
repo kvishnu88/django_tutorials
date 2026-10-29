@@ -12,7 +12,10 @@
         </form>
         <form method="POST">
             {% csrf_token %}
-            
+            <label for="email">Email:</label>
+            <input type="email" name="email" placeholder="Email" required>
+            <label for="password2">Confirm Password:</label>
+            <input type="password" name="password2" placeholder="Confirm Password" required>    
             <button type="submit" >Register</button>
         </form>
     </div>
