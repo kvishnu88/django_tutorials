@@ -1,16 +1,18 @@
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from .models import Room, Topic
+from .models import Message, Room, Topic
 from .forms import RoomForm
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 # Create your views here.
     
 
 def loginPage(request):
+    page = 'login'
     if request.user.is_authenticated:
         return redirect('home')  # Redirect to the home page if the user is already logged in
     if request.method == 'POST':
@@ -24,26 +26,64 @@ def loginPage(request):
         else:
             messages.error(request, 'Username or password is incorrect')        
             
-    return render(request, 'base/login_register.html')
+    return render(request, 'base/login_register.html', {'page': page})
 
 def logoutUser(request):
     logout(request)
     return redirect('login')  # Redirect to the login page after logout
 
 
+def registerPage(request):
+    page = 'register'   
+    form = UserCreationForm()
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.username = user.username.lower()
+            user.save()
+            login(request, user)
+            return redirect('home')  # Redirect to the home page after successful registration
+        else:
+            messages.error(request, 'An error occurred during registration')        
+            
+    return render(request, 'base/login_register.html', {'form': form, 'page': page})
+
 def home(request):
     q = request.GET.get('q') if request.GET.get('q') != None else ''
     rooms = Room.objects.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(topic__name__icontains=q))
     topics = Topic.objects.all()
-    return render(request, 'base/home.html', {'rooms': rooms, 'topics': topics})
- 
+    room_messages = Message.objects.filter(Q(room__name__icontains=q) | Q(body__icontains=q))   
+    return render(request, 'base/home.html', {'rooms': rooms, 'topics': topics, 'recent_messages': room_messages})
+
 def room(request):
     rooms = Room.objects.all()
     return render(request, 'base/room.html', {'room': rooms})
 
 def room(request, pk):
-    rooms = Room.objects.get(id=int(pk))
-    return render(request, 'base/room.html', {'room': rooms})
+    room = Room.objects.get(id=int(pk))
+    room_messages = room.message_set.all().order_by('-created')
+    participants = room.participants.all()
+    if request.method == 'POST':
+        message = Message.objects.create(
+            user=request.user,
+            room=room,
+            body=request.POST.get('body')
+        )
+        room.participants.add(request.user)  # Add the user to the room's participants
+        return redirect('room', pk=room.id)  # Redirect to the same room page after posting a message
+    return render(request, 'base/room.html', {'room': room, 'room_messages': room_messages, 'participants': participants})
+
+
+def deleteMessage(request, pk):
+    message = Message.objects.get(id=int(pk))
+    if request.user != message.user:
+        return HttpResponse('You are not allowed here!!')
+
+    if request.method == 'POST':
+        message.delete()
+        return redirect('room', pk=message.room.id)  # Redirect to the room page after deleting the message
+    return render(request, 'base/delete.html', {'obj': message})    
 
 @login_required(login_url='login')
 def createRoom(request):

@@ -1,6 +1,71 @@
 {% extends "main.html" %}
 
 {% block content %}
-    <h1> Room Page </h1>
-    <p>{{ room.id }}-- {{ room.name }} <a href="{% url 'room' pk=room.id %}">View Room</a></p>
+
+<style>
+    .room-container {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        gap: 20px;
+    }
+    .room-header {
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .participants {
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .message-form {
+        margin-top: 20px;
+    }
+</style>
+<div class="room-container">
+    <div class="room-header">
+        <div class="room-wrapper">
+            <h1> Conversation </h1>
+            <p>{{ room.id }}-- {{ room.name }} <a href="{% url 'room' pk=room.id %}">View Room</a></p>
+            <p>{{ room.description }}</p>
+            <small>Topic: {{ room.topic.name }}</small>
+            <hr>
+            <h2>Messages</h2>
+            <ul>
+                {% for message in room_messages %}
+                    {% if user.is_authenticated and user == message.user %}
+                    <a href="{% url 'delete-message' pk=message.id %}">Delete</a>
+                    {% endif %}
+                    <small>@{{ message.user.username }} {{ message.created | timesince }} ago </small>
+                    <p>{{ message.body }}</p>
+                    <hr>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if request.user.is_authenticated %}
+        <div class="message-form">
+            <h2>Send a Message</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <textarea name="body" placeholder="Type your message here..." required></textarea>
+                <button type="submit">Send</button>
+            </form>
+        {% endif %}
+        </div>
+    </div>
+    <div class="participants">
+        <h2>Participants</h2>
+        <hr>
+        <div>
+            {% if participants %}
+                {% for participant in participants %}
+                <p>@{{ participant.username }}</p>
+                {% endfor %}
+            {% else %}
+                <p>No participants yet.</p>
+            {% endif %}         
+            
+        </div>
+    </div>
+</div>
 {% endblock %}

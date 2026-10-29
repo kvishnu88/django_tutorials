@@ -4,7 +4,7 @@
 <style>
     .home-container {
         display: grid;
-        grid-template-columns: 1fr 3fr;
+        grid-template-columns: 1fr 3fr 1fr;
     }
    
 </style>
@@ -39,6 +39,21 @@
                 {% endfor %}
             </div>
         </div>
+        <div>
+            <h3>Recent Activities</h3>
+            <ul>
+                {% for message in recent_messages %}
+                    <div>
+                        {% if user.is_authenticated and user == message.user %}
+                        <a href="{% url 'delete-message' pk=message.id %}">Delete</a>
+                        {% endif %}
+                        <small>@{{ message.user.username }} {{ message.created | timesince }} ago </small>
+                        <small> Replied to <a href="{% url 'room' pk=message.room.id %}">{{ message.room.name }}</a></small>
+                        <hr>
+                        <p>{{ message }}</p>
+                    </div>
+                {% endfor %}
+            </ul>
     </div>
     
 {% endblock %}
